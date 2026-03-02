@@ -1,0 +1,102 @@
+<style>
+	{% include "templates/includes/purchase_order.css" %}
+</style>
+
+<div class="body">
+	<div class="half">
+		<div class="box-size">
+			<div class="section-title">Vendor</div>
+			<div class="start-container">
+				<b>{{ doc.supplier }}</b><br />
+				{% set supplier = frappe.db.get_value("Supplier",doc.supplier,["tax_id"],
+				as_dict=true) %} {% if supplier.tax_id %} ABN {{ supplier.tax_id }} <br />
+				{% endif %} <br />
+				{% if doc.supplier_address %} {% set sup_address =
+				frappe.get_doc("Address",doc.supplier_address) %} {{
+				frappe.render_template("/templates/print_format/address.html",{"address":
+				sup_address}) }} <br />
+				{% endif %}
+			</div>
+		</div>
+	</div>
+
+	<div class="half right-box">
+		{% if doc.shipping_address %}
+		<div class="box-size">
+			<div class="section-title">Ship To</div>
+			<div class="start-container">
+				<!-- {% set contact = frappe.get_list("Contact",filters=[["Dynamic Link",
+				"link_doctype","=","Company"], ["Dynamic Link","link_name","=",doc.company]],
+				fields=["first_name","`tabContact Phone`.phone"], limit=1) %} {% if contact %}
+				Attn:{{contact[0].first_name}} -->
+				<br />
+				<!-- Attn Ph.No {{contact[0].phone}} <br /> -->
+				<!-- {% endif %}  -->
+				{{doc.company}}<br />
+				{% set ship_address = frappe.get_doc("Address",doc.shipping_address) %} {{
+				frappe.render_template("/templates/print_format/address.html",{"address":
+				ship_address}) }}
+			</div>
+		</div>
+		{% endif %}
+	</div>
+</div>
+
+<table style="width: 100%; margin-top: 15px">
+	<tr class="item-row">
+		<td class="section-title">S.no</td>
+		<td class="section-title">Description</td>
+		<td class="center section-title" style="width: 90px">Due on</td>
+		<td class="center section-title" style="width: 90px">QTY</td>
+		<td class="center section-title" style="width: 10px">rate</td>
+		<td class="center section-title" style="width: 115px">amount</td>
+	</tr>
+	{% for item in doc.items %}
+	<tr class="item-row">
+		<td>{{ loop.index }}</td>
+		<td>
+			{{ item.item_name }}<br />
+			<div style="font-size: 11px">{{ item.description }}</div>
+		</td>
+		<td class="center">{{ frappe.utils.format_date(item.schedule_date) }}</td>
+		<td class="center">{{ item.qty }} <span>{{item.uom}}</span></td>
+		<td class="right">{{ frappe.utils.fmt_money(item.rate, currency=doc.currency) }}</td>
+		<td class="right">{{ frappe.utils.fmt_money(item.amount, currency=doc.currency) }}</td>
+	</tr>
+	{% endfor %}
+	<tr class="totals-row">
+		<td colspan="4"></td>
+		<td>SUBTOTAL</td>
+		<td>{{frappe.format(doc.net_total,{"fieldtype":"Currency"})}}</td>
+	</tr>
+	{% for tax in doc.taxes %}
+	<tr class="totals-row">
+		<td colspan="4"></td>
+		<td>
+			{% set account =
+			frappe.db.get_value("Account",tax.account_head,["account_name","account_type"])%} {% if
+			account[1] == "Tax" %} GST {% else %} {{ account[0].split(' ')[0] | upper }} {% endif
+			%}
+		</td>
+		<td>{{ frappe.utils.fmt_money(tax.tax_amount, currency=doc.currency) }}</td>
+	</tr>
+	{% endfor %} {% if doc.disable_rounded_total %}
+	<tr class="totals-row">
+		<td colspan="4"></td>
+		<td>TOTAL</td>
+		<td>{{frappe.format(doc.grand_total,{"fieldtype":"Currency"}) }}</td>
+	</tr>
+	{% else %} {% if doc.rounding_adjustment %}
+	<tr class="totals-row">
+		<td colspan="4"></td>
+		<td>ROUNDING</td>
+		<td>{{ frappe.utils.fmt_money(doc.rounding_adjustment, currency=doc.currency) }}</td>
+	</tr>
+	{% endif %}
+	<tr class="totals-row">
+		<td colspan="4"></td>
+		<td>TOTAL</td>
+		<td>{{ frappe.utils.fmt_money(doc.rounded_total, currency=doc.currency) }}</td>
+	</tr>
+	{% endif %}
+</table>

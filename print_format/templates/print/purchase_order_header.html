@@ -1,0 +1,33 @@
+<div class="pf-header">
+	<div class="company-header">
+		<div>
+			{% set company =
+			frappe.db.get_value("Company",doc.company,["company_name","company_logo","email","phone_no","tax_id"],
+			as_dict=true) %}
+			<!-- 
+			<div class="logo">
+				<img src="{{company.company_logo}}" alt="{{company.company_name}}" />
+			</div> -->
+		</div>
+		<div style="width: 290px">
+			<b>{{ doc.company }}</b><br />
+			{% if company.tax_id %} ABN {{company.tax_id}}<br />
+			{% endif %}
+			<!-- prettier-ignore -->
+			{% set address_list = frappe.get_list("Address", filters=[["Dynamic Link","link_doctype","=","Company"],["Dynamic Link","link_name","=",doc.company]],limit=1) %}
+				{% if address_list %} {% set addr = frappe.get_doc("Address", address_list[0]) %}
+				{{ frappe.render_template("/templates/print/address.html",{"address": addr}) }}
+			<br />
+			{% endif %}
+		</div>
+	</div>
+	<div>
+		<!-- <div class="pf-heading right">Purchase Order</div> -->
+		<div class="grid">
+			<div><b>Dated:</b></div>
+			<div>{{ frappe.utils.formatdate(doc.transaction_date) }}</div>
+			<div><b>Voucher No:</b></div>
+			<div>{{ doc.name }}</div>
+		</div>
+	</div>
+</div>
